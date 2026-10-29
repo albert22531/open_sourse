@@ -1,17 +1,28 @@
-# HAPP - split routing for AI services
+# HAPP selective AI routing
 
-The URL of `ai-only-routing.json` is **not an HAPP import URL**. It is a source file only. Do not paste the raw JSON GitHub URL into HAPP; that can produce a parsing error.
+This repository contains the HAPP routing source JSON and a separate **HAPP deeplink**.
 
-## Import
+**Import:** https://raw.githubusercontent.com/albert22531/open_sourse/main/happ/ai-only-routing.deeplink.txt
 
-1. Open [the HAPP deeplink text file](https://raw.githubusercontent.com/albert22531/open_sourse/main/happ/ai-only-routing.deeplink.txt).
-2. **Copy its entire content**. It begins with `happ://routing/onadd/`. Copy the content, not the browser address bar URL.
-3. In HAPP > Routing / Routing profiles, import from clipboard. Or open the copied deeplink on the device with HAPP installed.
-4. Select the new profile, enable routing and reconnect the VPN session. HAPP downloads GeoIP/GeoSite files on initial import.
+Copy the **contents of that file** (starting with `happ://routing/onadd/`), not its HTTP URL. Import via HAPP Routing from clipboard, or open the deeplink with HAPP. The GitHub JSON URL is not a valid HAPP routing-import URL.
 
-Rules: `GlobalProxy=false`; 106 explicit AI service domains and `geosite:category-ai-!cn` use VPN; everything else goes DIRECT. Do not use `domain:com` or `domain:ai` unless you truly intend ALL websites on those TLDs to use VPN.
+The profile is named `AI-only - rest DIRECT`. Importing again with the same name replaces the previous version on the same server-list subscription. Reconnect the VPN after importing. Restart Codex if it was stuck in a reconnect loop.
 
-If importing profiles is disabled for a provider-managed **JSON subscription**, HAPP documentation says its routing profiles are exclusively controlled by the subscription provider; use an ordinary editable server list/subscription instead.
+## Traffic handling
 
-Source JSON: [ai-only-routing.json](./ai-only-routing.json).
-Official HAPP documentation: https://www.happ.su/main/dev-docs/routing
+- `GlobalProxy=false`: unmatched destinations stay DIRECT
+- `ProxySites`: AI domains, category AI and OpenAI/Codex authentication dependencies go through VPN
+- `FakeDNS=true`: Xray handles the DNS mapping for domain-based split routing
+- `DomainStrategy=IPIfNonMatch`: matches domain rules before optional IP lookups
+- `RouteOrder=proxy-direct-block`: explicit proxy rules checked before direct rules
+- HAPP GeoIP/GeoSite data URLs still have to download successfully
+
+The OpenAI dependency hosts `challenges.cloudflare.com`, `workos.com`, and `statsig.com` can be shared by non-AI sites; traffic to those hosts may also use VPN. All other destinations fall back to DIRECT. This is **not** a blanket proxy for every `.com` or `.ai` site.
+
+Codex requires long-lived WSS on TCP 443 to `chatgpt.com`. A server or network that interrupts WebSockets can still cause reconnect loops even with correct routing.
+
+This profile has been checked for JSON and Base64 integrity, **not end-to-end validated on a specific HAPP Mac installation**.
+
+Official references:
+- HAPP routing: https://www.happ.su/main/ru/dev-docs/routing
+- OpenAI network allowlist and WSS: https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps
